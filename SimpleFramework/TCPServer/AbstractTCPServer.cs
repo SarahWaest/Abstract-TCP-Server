@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -70,17 +71,25 @@ namespace SimpleFramework.TCPServer
             Console.WriteLine(servername + " started at " + port);
             while (running)
             {
-                TcpClient socket = server.AcceptTcpClient(); // venter på client
-                Console.WriteLine("Server connected to a client");
-                // starter ny tråd
-                Task.Run(
-                    // indsætter en metode (delegate)
-                    () =>
-                    {
-                        TcpClient tmpsocket = socket;
-                        DoClient(tmpsocket);
-                    }
-                );
+                if (server.Pending())
+                {
+                    TcpClient socket = server.AcceptTcpClient(); // venter på client
+                    Console.WriteLine("Server connected to a client");
+                    // starter ny tråd
+                    Task.Run(
+                        // indsætter en metode (delegate)
+                        () =>
+                        {
+                            TcpClient tmpsocket = socket;
+                            DoClient(tmpsocket);
+                        }
+                    );
+                }
+                else
+                {
+                    Thread.Sleep(2000);
+                }
+
             }
         }
 
