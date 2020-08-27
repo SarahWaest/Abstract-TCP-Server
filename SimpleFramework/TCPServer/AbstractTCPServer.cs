@@ -10,6 +10,9 @@ namespace SimpleFramework.TCPServer
     public abstract class AbstractTCPServer
     {
         private int port;
+        private string servername;
+        private bool running = true;
+
         //XmlTextReader xmlTextReader = new XmlTextReader("AbstractTCPServerConfiq.xml");
 
         public void Start()
@@ -31,17 +34,41 @@ namespace SimpleFramework.TCPServer
             //    }
             //}
 
-            XmlNode xxNode = configDoc.DocumentElement.SelectSingleNode("serverport");
-            if (xxNode != null)
+            XmlNode portNode = configDoc.DocumentElement.SelectSingleNode("serverport");
+            if (portNode != null)
             {
-                port = Convert.ToInt32(xxNode.InnerText.Trim());
+                port = Convert.ToInt32(portNode.InnerText.Trim());
                 Console.WriteLine(port);
             }
 
+            XmlNode serverNameNode = configDoc.DocumentElement.SelectSingleNode("servername");
+            if (serverNameNode != null)
+            {
+                servername = serverNameNode.InnerText.Trim();
+            }
+
+            TcpListener shutdownServer = new TcpListener(IPAddress.Loopback, port + 1);
+            Task.Run(() =>
+            {
+                shutdownServer.Start();
+                while (running)
+                {
+                    TcpClient ShutdownSocket = shutdownServer.AcceptTcpClient();
+                    using (StreamReader sr = new StreamReader(ShutdownSocket.GetStream()))
+                    {
+                        if (sr.ReadLine() == "Close")
+                        {
+                            Console.WriteLine("Server shutdown aktiveret");
+                            softShutdown();
+                        }
+                    }
+                }
+            });
+
             TcpListener server = new TcpListener(IPAddress.Loopback, port);
             server.Start();
-            Console.WriteLine("Server started");
-            while (true)
+            Console.WriteLine(servername + " started at " + port);
+            while (running)
             {
                 TcpClient socket = server.AcceptTcpClient(); // venter på client
                 Console.WriteLine("Server connected to a client");
@@ -55,6 +82,21 @@ namespace SimpleFramework.TCPServer
                     }
                 );
             }
+        }
+
+
+        private void softShutdown()
+        {
+            if (running == true)
+            {
+                running = false;
+            }
+        }
+
+        private void StopServer()
+        {
+            port = port + 1;
+
         }
 
         private void DoClient(TcpClient socket)
