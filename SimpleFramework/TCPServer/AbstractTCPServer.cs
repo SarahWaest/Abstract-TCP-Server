@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -69,6 +70,7 @@ namespace SimpleFramework.TCPServer
             TcpListener server = new TcpListener(IPAddress.Loopback, port);
             server.Start();
             Console.WriteLine(servername + " started at " + port);
+            Trace.TraceInformation("Server " + servername + " started at " + port);
             while (running)
             {
                 if (server.Pending())
